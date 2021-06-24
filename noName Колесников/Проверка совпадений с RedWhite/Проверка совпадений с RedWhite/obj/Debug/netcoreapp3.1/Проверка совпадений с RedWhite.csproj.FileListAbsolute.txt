@@ -1,0 +1,13 @@
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.exe
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.deps.json
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.runtimeconfig.json
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.runtimeconfig.dev.json
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.dll
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\bin\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.pdb
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.csprojAssemblyReference.cache
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.AssemblyInfoInputs.cache
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.AssemblyInfo.cs
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.csproj.CoreCompileInputs.cache
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.dll
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.pdb
+C:\Users\aleks\Desktop\Проверка совпадений с RedWhite\Проверка совпадений с RedWhite\obj\Debug\netcoreapp3.1\Проверка совпадений с RedWhite.genruntimeconfig.cache

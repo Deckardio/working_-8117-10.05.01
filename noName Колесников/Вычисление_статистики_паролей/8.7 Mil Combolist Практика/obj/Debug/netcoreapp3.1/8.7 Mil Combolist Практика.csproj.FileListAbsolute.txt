@@ -1,0 +1,13 @@
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.exe
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.deps.json
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.runtimeconfig.json
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.runtimeconfig.dev.json
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.dll
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\bin\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.pdb
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.csprojAssemblyReference.cache
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.AssemblyInfoInputs.cache
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.AssemblyInfo.cs
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.csproj.CoreCompileInputs.cache
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.dll
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.pdb
+C:\Users\aleks\Desktop\8.7 Mil Combolist Практика\8.7 Mil Combolist Практика\obj\Debug\netcoreapp3.1\8.7 Mil Combolist Практика.genruntimeconfig.cache
