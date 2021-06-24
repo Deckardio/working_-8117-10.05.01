@@ -1,0 +1,27 @@
+version: '3'
+services:
+  owasp-frontend-8:
+    image: nukuutos/owasp-frontend-8
+    # keep container alive and listen for request after star up
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    networks:
+      - 'owasp'
+  owasp-api-8:
+    image: nukuutos/owasp-api-8
+    ports:
+      - '5000:5000'
+    networks:
+      - 'owasp'
+  owasp-frontend-8-hacker:
+    image: nukuutos/owasp-frontend-8-hacker
+    # keep container alive and listen for request after star up
+    stdin_open: true
+    ports:
+      - '3002:3002'
+    networks:
+      - 'owasp'
+networks:
+  owasp:
+    driver: bridge

@@ -1,0 +1,19 @@
+version: '3'
+services:
+  owasp-frontend-5:
+    image: nukuutos/owasp-frontend-5
+    # keep container alive and listen for request after start up
+    stdin_open: true
+    ports:
+      - '3000:3000'
+    networks:
+      - 'owasp'
+  owasp-api-5:
+    image: nukuutos/owasp-api-5
+    ports:
+      - '5000:5000'
+    networks:
+      - 'owasp'
+networks:
+  owasp:
+    driver: bridge
