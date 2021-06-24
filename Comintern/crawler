@@ -1,0 +1,407 @@
+import requests
+from datetime import datetime
+import re
+import json
+import sqlite3
+import time
+import random
+import os
+from PyQt5.QtCore import (pyqtSlot, QSize, Qt, QThread, pyqtSignal,)
+
+
+
+class InstagramCrawler:
+
+    change_progressbar = pyqtSignal(float)
+    change_text = pyqtSignal(str)
+    BASE_INST_API_URL = 'https://instagram.com/graphql/query/'
+
+    def __init__(self, login: str, password: str, username_start: str):
+        self.BASE_DIR_PHOTO = r'downloaded_data'
+        self.search_query = 'https://www.instagram.com/web/search/topsearch/?context=blended&query=USERNAME&rank_token=0.54&include_reel=true'
+        self.base_insta_url = 'https://www.instagram.com/'
+        self.start_username = username_start
+        self.hash_subscribe = '5aefa9893005572d237da5068082d8d5'
+        self.base_url_suscribe = 'https://www.instagram.com/graphql/query/?query_hash={0}&' \
+                                 'variables=%7B%22id%22%3A%22user_id%22%2C%22include_reel%22%3Atrue%2C%22' \
+                                 'fetch_mutual%22%3Atrue%2C%22first%22%3Acount_post%7D'.format(self.hash_subscribe)
+        self.login = login
+        self.password = password
+        self.session = requests.Session()
+        self.session_initialize()
+
+
+    def insert_info(self, owner: str, user: str, user_id: str):
+        connect = sqlite3.connect("insta.db")
+        cursor = connect.cursor()
+        query = "INSERT INTO info_user(owner, user, user_id, date, seen, is_search) " \
+                "VALUES(\'{0}\', \'{1}\', \'{2}\',\'{3}\', 0, 0)".format(owner, str(user), str(user_id), str(datetime.now()))
+        print(query)
+        cursor.execute(query)
+        connect.commit()
+        cursor.close()
+        connect.close()
+        print('insert new data')
+
+
+    def get_username(self):
+        connect = sqlite3.connect("insta.db")
+        cursor = connect.cursor()
+        query = 'SELECT user, user_id FROM info_user WHERE is_search=0'
+        cursor.execute(query)
+        data = cursor.fetchall()
+        cursor.close()
+        connect.close()
+        dict_user = {}
+        for elem in data:
+            try:
+                dict_user[elem[1]] = elem[0]
+            except Exception as e:
+                print(e)
+        return dict_user
+
+
+    def update_db_row(self, id_user: str, username: str):
+        cursor = connect.cursor()
+        query = 'UPDATE info_user SET is_search=1 WHERE user_id=\'{0}\' AND user=\'{1}\''.format(id_user, username)
+        cursor.execute(query)
+        connect.commit()
+        cursor.close()
+        connect.commit()
+
+    def update_seen_status(self, id_user: str, username: str):
+        connect = sqlite3.connect("insta.db")
+        cursor = connect.cursor()
+        query = 'UPDATE info_user SET seen=1 WHERE user_id=\'{0}\''.format(id_user)
+        print(query)
+        cursor.execute(query)
+        connect.commit()
+        cursor.close()
+        connect.commit()
+
+    def session_initialize(self):
+        '''инициализация сессии INSTAGRAM'''
+        time = int(datetime.now().timestamp()) # получение временной метки
+        self.login_url = 'https://www.instagram.com/accounts/login/ajax/'
+        self.session.headers.update({'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                                   ' (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'})
+
+        self.session.request("GET", 'https://instagram.com')
+        self.session.headers.update({"Referer": 'https://www.instagram.com/accounts/login/'})
+        r = self.session.get('https://www.instagram.com/accounts/login/')
+        csrf = re.findall(r"csrf_token\":\"(.*?)\"", r.text)[0] # вытащили csrf токен
+        r = self.session.request("GET", 'https://www.instagram.com/data/shared_data/')
+        #public_key = json.loads(r.text)['encryption']['public_key']
+        #enc_password.encrypt_password(72, public_key, self.password)
+        payload = {
+            'username': str(self.login),
+            'enc_password': "#PWD_INSTAGRAM_BROWSER:0:{0}:{1}".format(str(time), self.password),
+            'queryParams': {},
+            'optIntoOneTap': 'false'
+        } # сформировали json для авторизации
+        r = self.session.post(self.login_url, data=payload, headers={
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36",
+            "x-requested-with": "XMLHttpRequest",
+            "referer": "https://www.instagram.com/accounts/login/",
+            "x-csrftoken": csrf
+        })
+        print(r.text)
+
+
+    def get_user_id(self):
+        r = self.session.get(self.base_insta_url + self.start_username + '/?__a=1')
+        data = json.loads(r.text)
+        return data['logging_page_id'].replace('profilePage_', '')
+
+
+    def search_by_user_from_db(self):
+        dict_user = self.get_username()
+        for elem in dict_user:
+            username = dict_user[elem]
+            r = self.session.request("GET", self.search_query.replace('USERNAME', username))
+            data = json.loads(r.text)
+            count_user = 0
+            for user in data['users']:
+                if count_user > 0:
+                    self.insert_info(owner='search', user=user['user']['username'], user_id=str(user['user']['pk']))
+                    self.update_db_row(id_user=str(user['user']['pk']), username=user['user']['username'])
+                count_user += 1
+            time.sleep(random.uniform(1.58, 4.87))
+
+
+
+    def get_subscribers(self, count_s = 36):
+        '''получаем подписчиков с профиля'''
+        list_subscriber = []
+        count_insert = 0
+        is_true = True
+        self.param_id_user = self.get_user_id()
+        data = self.session.request("GET", self.base_url_suscribe.replace('user_id',
+                                                '{0}'.format(str(self.param_id_user))).replace('count_post', '24')) # тащим первые 24 подписчика
+        data = data.text
+        data = json.loads(data)
+        #сохраняем информацию о пользователе
+        for elem in data['data']['user']['edge_followed_by']['edges']:
+            list_subscriber.append(elem['node']['username'])
+            #self.insert_info(owner=self.start_username, user=elem['node']['username'], user_id=str(elem['node']['id']))
+            count_insert += 1
+
+        is_true = data['data']['user']['edge_followed_by']['page_info']['has_next_page']
+        count_click_partition = 1
+        # тянем подписчиков пока они есть и не первалили за необходимое количество
+        while is_true:
+            if count_insert < count_s:
+                cursor = data['data']['user']['edge_followed_by']['page_info']['end_cursor'].replace('=', '%3D')
+                data = self.session.request("GET", 'https://www.instagram.com/graphql/query/?query_hash='
+                                                   '5aefa9893005572d237da5068082d8d5&variables=%7B%22id%22%3A%22{0}'
+                                                   '%22%2C%22include_reel%22%3Atrue%2C%22fetch_mutual%22%3Afalse%2C%22'
+                                                   'first%22%3A12%2C%22after%22%3A%22{1}'
+                                                   '%22%7D'.format(str(self.param_id_user), cursor))
+
+                data = data.text
+                data = json.loads(data)
+
+                for elem in data['data']['user']['edge_followed_by']['edges']:
+                    '''self.insert_info(owner=self.start_username, user=elem['node']['username'],
+                                     user_id=str(elem['node']['id']))'''
+                    list_subscriber.append(elem['node']['username'])
+                    count_insert += 1
+
+                is_true = data['data']['user']['edge_followed_by']['page_info']['has_next_page']
+                print('COUNT CLICK ----->>>> {0}'.format(str(count_click_partition)))
+                time.sleep(random.uniform(1.58, 4.87))
+                count_click_partition += 1
+                return list_subscriber
+            else:
+                break
+
+
+    def download_posts(self, username: str):
+        '''качаем посты с метаданными'''
+        get_posts_request = 'https://www.instagram.com/graphql/query/?query_hash=32b14723a678bd4628d70c1f877b94c9&' \
+                            'variables=%7B%22id%22%3A%22user_id%22%2C%22first%22%3A12%2C%22after%22%3A%22cursor%3D%3D%22%7D'
+        try:
+            r = self.session.get(self.base_insta_url + username + '/?__a=1')
+            data = json.loads(r.text)
+            count_post = data['graphql']['user']['edge_owner_to_timeline_media']['count']
+            user_id = data['logging_page_id'].replace('profilePage_', '')
+            self.update_seen_status(id_user=user_id, username=self.start_username)
+            self.profile_pic = data['graphql']['user']['profile_pic_url_hd']
+            if count_post > 1:
+                user_id = data['logging_page_id'].replace('profilePage_', '')
+                if count_post > 0:
+                    count_need = 0
+                    if count_post < 101:
+                        count_need = count_post
+                    else:
+                        count_need = count_post
+                    count_to_done = 1
+                    try:
+                        if count_post > 24:
+                            cur = data['graphql']['user']['edge_owner_to_timeline_media']['page_info']['end_cursor'].replace('=', '')#получаем курсор на слдеующую порцию данных
+                            #response = self.session.request("GET", get_posts_request.replace('user_id', str(user_id)).replace('cursor', cur))
+                            while count_to_done < count_need:
+                                response = self.session.request("GET", get_posts_request.replace('user_id', str(user_id)).replace('cursor', cur))
+                                if count_post > 24:
+                                    cur = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media']['page_info']['end_cursor'].replace('=', '')
+                                list_edge = json.loads(response.text)['data']['user']['edge_owner_to_timeline_media']['edges']
+                                print(len(list_edge))
+                                max_size_picture = ''
+                                for edge in list_edge:
+                                    all_link = edge['node']['display_resources']
+                                    max_size_picture = all_link[len(all_link) - 1]['src']
+                                    time.sleep(.1)
+                                    count_to_done += 1
+                                    print('DOWNLOAD {1} PICTURE FROM https://www.instagram.com/{0}'.format(username, str(count_to_done)))
+
+                                    link_comment = 'https://www.instagram.com/graphql/query/?query_hash=3eb224d64759a46f7' \
+                                                   '083d3322a2458bd&variables=%7B%22shortcode%22%3A%22replace_value%' \
+                                                   '22%2C%22child_comment_count%22%3A3%2C%22fetch_comment_count%22' \
+                                                   '%3A40%2C%22parent_comment_count%22%3A24%2C%22has_threaded_com' \
+                                                   'ments%22%3Atrue%7D'.replace('replace_value', edge['node']['shortcode'])# ссылка на комментарии
+                                    response = self.session.request("GET", link_comment)
+                                    resp_json = json.loads(response.text)
+                                    all_comments = resp_json['data']['shortcode_media']['edge_media_to_parent_comment']['edges']# получили все комментарии из првого клика
+                                    next_comment_cursor = resp_json['data']['shortcode_media']['edge_media_to_parent_comment']['page_info']['end_cursor']
+                                    try:
+                                        caption = resp_json['data']['shortcode_media']['edge_media_to_caption']['edges'][0]['node']['text']
+                                        reg_exp_tags = '#.*'
+                                        all_tags = re.findall(reg_exp_tags, caption)
+                                        if len(all_tags) > 0:
+                                            caption = caption.replace(all_tags[0], '') + 'split_line'  + all_tags[0]
+                                        else:
+                                            caption = ''
+                                    except Exception as e:
+                                        caption = ''
+                                        print(e)
+                                    self.download_pic_by_link(max_size_picture, username, comments=all_comments, caption=caption)#сохраняем данные
+                                self.download_ava_picture(link=self.profile_pic, user_id=username)
+                                time.sleep(random.uniform(3.89, 6.90))
+                        else:
+                            all_posts = data['graphql']['user']['edge_owner_to_timeline_media']['edges']
+                            cur = data['graphql']['user']['edge_owner_to_timeline_media']['page_info']['end_cursor'].replace('=', '')
+
+                            for post in all_posts:
+                                try:
+                                    link_comment = 'https://www.instagram.com/graphql/query/?query_hash=3eb224d64759a46f7' \
+                                                   '083d3322a2458bd&variables=%7B%22shortcode%22%3A%22replace_value%' \
+                                                   '22%2C%22child_comment_count%22%3A3%2C%22fetch_comment_count%22' \
+                                                   '%3A40%2C%22parent_comment_count%22%3A24%2C%22has_threaded_com' \
+                                                   'ments%22%3Atrue%7D'.replace('replace_value', post['node'][
+                                        'shortcode'])  # ссылка на комментарии
+                                    response = self.session.request("GET", link_comment)
+                                    resp_json = json.loads(response.text)
+                                    print(123123123)
+                                    caption = resp_json['data']['shortcode_media']['edge_media_to_caption']['edges'][0]['node'][
+                                        'text']
+                                    print(caption)
+                                    reg_exp_tags = '#.*'
+                                    all_tags = re.findall(reg_exp_tags, caption)
+                                    if len(all_tags) > 0:
+                                        caption = caption.replace(all_tags[0], '')+ 'split_line'  + all_tags[0]
+
+                                    else:
+                                        resp_title = self.session.request("GET", 'https://instagram.com/p/{0}'.format(
+                                            post['node']['shortcode']))
+                                        reg_exp_title = re.compile('<title>.*?</title>', re.S | re.M)
+                                        all_tittle = reg_exp_title.findall(resp_title.text)
+                                        try:
+                                            all_tittle = all_tittle[0]
+                                            cleanr = re.compile('<.*?>')
+                                            cleantext = re.sub(cleanr, '', all_tittle)
+                                            all_tags = re.findall(reg_exp_tags, cleantext)
+                                            if len(all_tags) == 0:
+                                                all_tags = ['']
+                                            caption = caption.replace(all_tags[0], '') + 'split_line' + all_tags[0]
+                                            print(caption)
+                                        except Exception as e:
+                                            print(e)
+                                            caption = ''
+
+
+                                except Exception as e:
+                                    caption = ''
+                                    print(e)
+                                max_size_picture = post['node']['thumbnail_resources'][len(post['node']['thumbnail_resources']) - 1]['src']
+                                count_to_done += 1
+
+                                link_comment = 'https://www.instagram.com/graphql/query/?query_hash=3eb224d64759a46f7' \
+                                               '083d3322a2458bd&variables=%7B%22shortcode%22%3A%22replace_value%' \
+                                               '22%2C%22child_comment_count%22%3A3%2C%22fetch_comment_count%22' \
+                                               '%3A40%2C%22parent_comment_count%22%3A24%2C%22has_threaded_com' \
+                                               'ments%22%3Atrue%7D'.replace('replace_value', post['node'][
+                                    'shortcode'])  # ссылка на комментарии
+                                response = self.session.request("GET", link_comment)
+                                resp_json = json.loads(response.text)
+                                all_comments = resp_json['data']['shortcode_media']['edge_media_to_parent_comment'][
+                                    'edges']  # получили все комментарии из првого клика
+                                next_comment_cursor = \
+                                resp_json['data']['shortcode_media']['edge_media_to_parent_comment']['page_info'][
+                                    'end_cursor']
+                                self.download_pic_by_link(max_size_picture, username, comments=all_comments, caption=caption)
+
+                            response = self.session.request("GET",
+                                                            get_posts_request.replace('user_id', str(user_id)).replace(
+                                                                'cursor', cur))
+                            data = json.loads(response.text)
+                            print(response.text)
+                            all_posts = data['data']['user']['edge_owner_to_timeline_media']['edges']
+                            for post in all_posts:
+                                max_size_picture = \
+                                post['node']['thumbnail_resources'][len(post['node']['thumbnail_resources']) - 1]['src']
+                                count_to_done += 1
+
+                                link_comment = 'https://www.instagram.com/graphql/query/?query_hash=3eb224d64759a46f7' \
+                                               '083d3322a2458bd&variables=%7B%22shortcode%22%3A%22replace_value%' \
+                                               '22%2C%22child_comment_count%22%3A3%2C%22fetch_comment_count%22' \
+                                               '%3A40%2C%22parent_comment_count%22%3A24%2C%22has_threaded_com' \
+                                               'ments%22%3Atrue%7D'.replace('replace_value', post['node'][
+                                    'shortcode'])  # ссылка на комментарии
+                                response = self.session.request("GET", link_comment)
+                                resp_json = json.loads(response.text)
+                                print(resp_json)
+                                all_comments = resp_json['data']['shortcode_media']['edge_media_to_parent_comment'][
+                                    'edges']  # получили все комментарии из првого клика
+                                next_comment_cursor = \
+                                    resp_json['data']['shortcode_media']['edge_media_to_parent_comment']['page_info'][
+                                        'end_cursor']
+                                try:
+                                    caption = data['edge_media_to_caption']['edges'][0]['node']['text']
+                                except Exception as e:
+                                    caption = ''
+                                    print(e)
+                                self.download_pic_by_link(max_size_picture, username, comments=all_comments, caption=caption)
+                                self.download_ava_picture(link=self.profile_pic, user_id=username)
+                    except Exception as e:
+                        print(e)
+                        self.update_seen_status(id_user=user_id, username=self.start_username)
+            self.update_seen_status(id_user=user_id, username=self.start_username)
+        except Exception as e:
+            print(e)
+        time.sleep(random.uniform(.89, 11.25))
+
+
+
+    def download_pic_by_link(self, link: str, user_id: [str, int], comments: dict, caption: str):
+        if not os.path.exists(os.path.join(self.BASE_DIR_PHOTO, str(user_id))):
+            os.mkdir(os.path.join(self.BASE_DIR_PHOTO, str(user_id)))
+        list_file = os.listdir(os.path.join(self.BASE_DIR_PHOTO, str(user_id)))
+        downloaded_obj = requests.get(link)
+
+        with open("{2}/{0}_{1}.jpg".format(str(user_id), str(len(list_file) / 2),
+                                          os.path.join(self.BASE_DIR_PHOTO, str(user_id))), "wb") as file:
+            file.write(downloaded_obj.content)
+        f_comments = open("{2}/{0}_{1}.txt".format(str(user_id), str(len(list_file) /2),
+                                          os.path.join(self.BASE_DIR_PHOTO, str(user_id))), "a", encoding='utf-8')
+        for comment in comments:
+            text = comment['node']['text']
+            owner = comment['node']['owner']['username']
+            f_comments.write("{0}:  {1}\n\n".format(owner, text))
+        f_comments.close()
+
+        if caption != '':
+            f_caption = open("{2}/{0}_{1}_caption.txt".format(str(user_id), str(len(list_file) /2),
+                                              os.path.join(self.BASE_DIR_PHOTO, str(user_id))), "a", encoding='utf-8')
+            list_cap = caption.split('split_line')
+            try:
+                cap = list_cap[0]
+            except:
+                cap = ''
+            try:
+                tags = list_cap[1]
+            except:
+                tags = ''
+            f_caption.write('HEADERS: {0}\n\n\nTAGS:{1}'.format(cap,tags))
+            f_caption.close()
+
+    def download_ava_picture(self, link: str, user_id: [str, int]):
+        if not os.path.exists(os.path.join(self.BASE_DIR_PHOTO, str(user_id))):
+            os.mkdir(os.path.join(self.BASE_DIR_PHOTO, str(user_id)))
+        downloaded_obj = requests.get(link)
+        with open("{0}/ava.jpg".format(os.path.join(self.BASE_DIR_PHOTO, str(user_id))), "wb") as file:
+            file.write(downloaded_obj.content)
+
+
+def get_username_limit(limit=1000):
+    connect = sqlite3.connect("insta.db")
+    cursor = connect.cursor()
+    query = 'SELECT user, user_id FROM info_user WHERE seen=0'
+    cursor.execute(query)
+    data = cursor.fetchall()
+    list_user = []
+    for elem in data:
+        if elem not in list_user:
+            list_user.append(elem[0])
+            query = 'UPDATE info_user SET seen = 1 WHERE user=\'{0}\''.format(elem[0])
+            cursor.execute(query)
+            connect.commit()
+            if len(list_user) == limit:
+                break
+    cursor.close()
+    connect.close()
+    return list_user
+
+
+
+
+
