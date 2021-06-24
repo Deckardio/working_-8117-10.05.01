@@ -1,0 +1,79 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+import os
+import sys
+from PyQt5.QtGui import (QIcon, )
+from PyQt5.QtWidgets import (QWidget, QLabel, QLineEdit,
+                             QProgressBar, QGridLayout, QApplication, QPushButton, QTextEdit)
+
+from crawler import InstagramCrawler
+
+
+class Example(QWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        self.usernameEdit = QLineEdit()
+        self.username = QLabel('Username:')
+        self.all_progress = QLabel('Общий прогресс:')
+        self.progress_bar = QProgressBar()
+        self.start_button = QPushButton(text='Начать сбор данных', icon=QIcon('../ico/instagram.ico'))
+        self.process_running = QLabel('Выполняемы процесс:')
+        self.process_running_text = QTextEdit()
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowIcon(QIcon('../ico/instagram.ico'))
+
+        grid = QGridLayout()
+        grid.setSpacing(10)
+
+        grid.addWidget(self.username, 0, 0)
+        grid.addWidget(self.usernameEdit, 0, 1)
+        '''grid.addWidget(self.process_running, 1, 0)
+        grid.addWidget(self.process_running_text , 1, 1)
+        grid.addWidget(self.all_progress, 2, 0)
+        grid.addWidget(self.progress_bar, 2, 1)'''
+        grid.addWidget(self.start_button, 3, 1)
+
+        self.setLayout(grid)
+
+        self.setGeometry(300, 300, 350, 300)
+        self.setWindowTitle('InstaDownloader')
+
+        self.start_button.clicked.connect(self.on_click_download)
+
+        self.show()
+
+    def on_click_download(self):
+        '''self.thread = DownloadPosts(username=self.usernameEdit.text())
+        self.thread.change_progressbar.connect(self.setProgressValue)
+        self.thread.change_text.connect(self.setTextValue)
+        self.thread.start()'''
+        self.start_button.setVisible(False)
+        #Вызов crawler
+        c = InstagramCrawler('dmitryrostov2011', 'Rostov2010', username_start=self.usernameEdit.text())
+        list_subscriber = c.get_subscribers()
+        if not os.path.exists('downloaded_data/{0}'.format(self.usernameEdit.text())):
+            os.mkdir('downloaded_data/{0}'.format(self.usernameEdit.text()))
+        f = open('downloaded_data/{0}/subscribers'.format(self.usernameEdit.text()), 'a', encoding='utf-8')
+        for s in list_subscriber:
+            f.write('{0}\n'.format(s))
+        f.close()
+        print('WORK WITH https://www.instagram.com/{0}'.format(self.usernameEdit.text()))
+        c.download_posts(username=self.usernameEdit.text())
+        self.start_button.setVisible(True)
+
+    def setProgressValue(self, value):
+        self.progress_bar.setValue(value)
+
+    def setTextValue(self,value):
+        self.process_running_text.setText(value)
+
+
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    ex = Example()
+    sys.exit(app.exec_())
