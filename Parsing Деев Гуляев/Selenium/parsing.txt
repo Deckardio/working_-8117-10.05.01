@@ -1,0 +1,25 @@
+Bohemian FC
+Shamrock Rovers
+3,10
+3,10
+2,25
+Derry City
+Sligo Rovers FC
+2,55
+2,90
+2,85
+Drogheda Utd
+Dundalk FC
+3,90
+3,60
+1,80
+Longford Town FC
+Waterford FC
+2,30
+3,00
+3,20
+Saint Patrick's
+Finn Harps FC
+1,47
+3,90
+6,70
